@@ -63,3 +63,38 @@ def test_note_add_deep_tag():
     notes[0].save_tags()
     assert notes[0].tags == {'another-tag', 'some-tag'}
     assert not Path('./tests/test-notedir/deep/tag/test-note.md').exists()
+
+
+def test_title_to_filepath_simple():
+    filepath = notetxt.title_to_filepath('A simple title')
+    assert filepath == 'a-simple-title'
+
+
+def test_title_to_filepath_nonalpha():
+    filepath = notetxt.title_to_filepath("A simple note's title")
+    assert filepath == 'a-simple-note-s-title'
+
+
+def test_title_to_filepath_nonalpha_II():
+    filepath = notetxt.title_to_filepath("Test: A simple note's title")
+    assert filepath == 'test--a-simple-note-s-title'
+
+
+def test_add_new_note():
+    title = 'Another test note'
+    tag = 'notes'
+    note_path = './tests/test-notedir/'
+    ext = 'md'
+
+    note = notetxt.new_note(title, tag, note_path, ext=ext)
+
+    filepath = notetxt.title_to_filepath(title)
+    notepath = Path(f"{note_path}/{tag}/{filepath}.{ext}")
+    loaded_note = notetxt.note_from_path(notepath, Path(note_path))
+
+    assert note.title == loaded_note.title
+    assert note.path == loaded_note.path
+    assert note.tags == loaded_note.tags
+
+    os.unlink(notepath)
+    assert not Path(notepath).exists()

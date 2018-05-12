@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import defaultdict
 
 
-TITLE_REGEX = "^([A-Za-z0-9 -_:]+)\n(?:-|=)+\n"
+TITLE_REGEX = "^([A-Za-z0-9 -_:']+)\n(?:-|=)+\n"
 
 
 class Note:
@@ -39,16 +39,20 @@ class Note:
         return f"Note(title='{self.title}', path='{self.path}', " \
                f"tags={self.tags})"
 
+    def _mkdirs(self, path) -> None:
+        # This is the closest to mkdir -p as we could make it
+        try:
+            os.makedirs(path)
+        except:
+            pass
+
     def save_tags(self):
         filename = os.path.basename(self.path)
         for tag in self.__tags_added:
             path = Path(f"{self.dir}/{tag}/{filename}")
             if not path.exists():
-                # This is the closest to mkdir -p as we could make it
-                try:
-                    os.makedirs(f"{self.dir}/{tag}")
-                except:
-                    pass
+                self._mkdirs(f"{self.dir}/{tag}")
+
             relpath = os.path.relpath(str(self.path),
                                       str(self.dir.resolve()))
 
@@ -67,10 +71,15 @@ class Note:
 
     def save(self):
         if not self.path.exists():
+            dirname = os.path.dirname(str(self.path))
+            if not Path(dirname).exists():
+                self._mkdirs(dirname)
+
             content = f"{self.title}\n{len(self.title) * '='}\n"
             with open(str(self.path), 'w') as f:
                 f.write(content)
         self.save_tags()
+        return self
 
 
 def note_from_path(path: Path, dir: Path) -> Note:
@@ -82,6 +91,20 @@ def note_from_path(path: Path, dir: Path) -> Note:
         return Note(title, path, dir)
 
     return None
+
+
+def title_to_filepath(title: str) -> str:
+    return re.sub(r'[^a-z0-9]', '-', title.lower())
+
+
+def new_note(title: str, tag: str,
+             note_dir: str, ext: str='rst') -> Note:
+
+    filepath = title_to_filepath(title)
+    path = Path(f"{note_dir}/{tag}/{filepath}.{ext}")
+    note = Note(title, path, note_dir)
+    note.save()
+    return note
 
 
 def load_from_dir(directory: str) -> list:
@@ -99,7 +122,6 @@ def load_from_dir(directory: str) -> list:
         if note:
             notes[str(path)] = note
 
-    print(path_map)
     for pathstr, linkstrs in path_map.items():
         for linkstr in linkstrs:
             notes[pathstr].add_tag_from_link(linkstr)
