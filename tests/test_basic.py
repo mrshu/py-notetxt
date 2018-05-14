@@ -95,6 +95,7 @@ def test_add_new_note():
     assert note.title == loaded_note.title
     assert note.path == loaded_note.path
     assert note.tags == loaded_note.tags
+    assert note.id == loaded_note.id
 
     os.unlink(notepath)
     assert not Path(notepath).exists()

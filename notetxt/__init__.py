@@ -1,6 +1,7 @@
 import os
 import re
 import glob
+import hashlib
 from pathlib import Path
 from collections import defaultdict
 
@@ -17,6 +18,11 @@ class Note:
         self.title = title
         self.path = path
         self.dir = dir
+
+    @property
+    def id(self):
+        string = self.title + str(self.path) + str(self.__tags)
+        return hashlib.sha224(string.encode()).hexdigest()
 
     @property
     def tags(self) -> set:
@@ -37,7 +43,7 @@ class Note:
 
     def __repr__(self) -> str:
         return f"Note(title='{self.title}', path='{self.path}', " \
-               f"tags={self.tags})"
+                f"id='{self.id[:3]}', tags={self.tags})"
 
     def _mkdirs(self, path) -> None:
         # This is the closest to mkdir -p as we could make it
@@ -132,6 +138,4 @@ def load_from_dir(directory: str) -> list:
 if __name__ == "__main__":
     import pprint
     notes = load_from_dir('./tests/test-notedir/')
-    notes[0].add_tag('another-tag')
-    notes[0].save_tags()
     pprint.pprint(notes)
